@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio de Xadrez: Mate em 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Azul acinzentado claro */
+        }
+        .chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 90vw; /* 90% da largura da viewport */
+            height: 90vw; /* 90% da largura da viewport (para manter proporção quadrada) */
+            max-width: 500px; /* Largura máxima */
+            max-height: 500px; /* Altura máxima */
+            border: 2px solid #374151; /* Cinza escuro */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin: 0 auto; /* Centralizar o tabuleiro */
+        }
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(20px, 7vw, 40px); /* Tamanho da peça responsivo */
+            cursor: pointer;
+            user-select: none; /* Impede a seleção de texto da peça */
+        }
+        .square.light {
+            background-color: #f0d9b5; /* Cor clara do tabuleiro */
+        }
+        .square.dark {
+            background-color: #b58863; /* Cor escura do tabuleiro */
+        }
+        .piece-white {
+            color: #ffffff;
+            text-shadow: 0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 2px black; /* Contorno para peças brancas */
+        }
+        .piece-black {
+            color: #000000;
+        }
+        .selected-square {
+            background-color: #60a5fa !important; /* Azul para casa selecionada */
+            outline: 2px solid #2563eb;
+        }
+        .highlight-solution {
+            animation: pulse-solution 1s 2;
+        }
+        @keyframes pulse-solution {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+        .game-controls button {
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl mx-auto text-center">
+        <header class="mb-6">
+            <h1 class="text-4xl font-bold text-slate-700">Desafio de Xadrez: Mate em 1</h1>
+        </header>
+
+        <div id="puzzleDescription" class="mb-3 text-lg font-medium text-slate-600">
+            Carregando desafio...
+        </div>
+        <div id="turnIndicator" class="mb-3 text-md font-semibold text-slate-500">
+            Vez das: -
+        </div>
+
+        <div id="chessBoard" class="chess-board rounded-md overflow-hidden">
+            </div>
+
+        <div id="messageArea" class="mt-6 mb-4 p-3 min-h-[50px] rounded-lg text-slate-700 bg-white shadow-md font-semibold">
+            Selecione uma peça para mover.
+        </div>
+
+        <div class="game-controls mt-4">
+            <button id="nextPuzzleButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hidden">
+                Próximo Desafio
+            </button>
+            <button id="resetPuzzleButton" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg shadow-md ml-2">
+                Resetar Desafio
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configurações e Dados dos Desafios ---
+        const PIECES = {
+            // Brancas
+            'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
+            // Pretas
+            'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟︎'
+        };
+
+        const puzzles = [
+            {
+                id: 1,
+                description: "Brancas jogam e dão mate em 1. (Mate do corredor)",
+                turn: 'w', // 'w' para brancas, 'b' para pretas
+                boardSetup: [ // Representação do tabuleiro: a8 (0,0) -> h1 (7,7)
+                    [null, null, null, null, 'bK', null, null, null], // Linha 8 (índice 0)
+                    [null, null, null, null, null, null, null, null], // Linha 7
+                    [null, null, null, null, null, null, null, null], // Linha 6
+                    [null, null, null, null, null, null, null, null], // Linha 5
+                    [null, null, null, null, null, null, null, null], // Linha 4
+                    [null, null, null, null, null, null, null, null], // Linha 3
+                    ['bP', 'bP', 'bP', null, null, 'bP', 'bP', 'bP'], // Linha 2
+                    [null, null, null, null, 'wR', null, null, 'wK']  // Linha 1 (índice 7)
+                ],
+                solution: { from: [7, 4], to: [0, 4] } // Torre de e1 para e8 (índices)
+            },
+            {
+                id: 2,
+                description: "Brancas jogam e dão mate em 1. (Dama poderosa)",
+                turn: 'w',
+                boardSetup: [
+                    [null, null, null, null, null, null, 'bK', null], // h8
+                    [null, null, null, null, null, 'bP', null, 'bP'], // g7, h7
+                    [null, null, null, null, null, null, 'wQ', null], // g6
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
+                    ['wR', 'wN', 'wB', null, 'wK', 'wB', 'wN', 'wR']
+                ],
+                solution: { from: [2, 6], to: [0, 6] } // Dama de g6 para g8
+            },
+            {
+                id: 3,
+                description: "Pretas jogam e dão mate em 1.",
+                turn: 'b',
+                boardSetup: [
+                    ['wR', null, 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR'],
+                    ['wP', 'wP', 'wP', null, 'wP', 'wP', 'wP', 'wP'],
+                    [null, null, 'wN', null, null, null, null, null],
+                    [null, 'bP', null, 'wP', null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, 'bN', null, null, null, null, null], // Cavalo preto em c3
+                    ['bP', null, 'bP', 'bP', 'bP', 'bP', 'bP', 'bP'],
+                    [null, null, null, 'bQ', 'bK', null, null, null]  // Rei e Dama pretos
+                ],
+                solution: { from: [5, 2], to: [3, 0] } // Cavalo de c3 para a4 (índices)
+            }
+        ];
+
+        // --- Variáveis de Estado do Jogo ---
+        let currentPuzzleIndex = 0;
+        let boardState = []; // Cópia do boardSetup do puzzle atual
+        let selectedSquare = null; // { row, col, piece }
+        let currentTurn = 'w';
+        let puzzleSolved = false;
+
+        // --- Referências aos Elementos do DOM ---
+        const boardElement = document.getElementById('chessBoard');
+        const messageArea = document.getElementById('messageArea');
+        const nextPuzzleButton = document.getElementById('nextPuzzleButton');
+        const resetPuzzleButton = document.getElementById('resetPuzzleButton');
+        const puzzleDescriptionElement = document.getElementById('puzzleDescription');
+        const turnIndicatorElement = document.getElementById('turnIndicator');
+
+        // --- Funções do Jogo ---
+
+        /** Inicializa o jogo ou carrega um desafio específico. */
+        function initGame() {
+            loadPuzzle(currentPuzzleIndex);
+            nextPuzzleButton.classList.add('hidden'); // Esconde o botão de próximo
+        }
+
+        /** Carrega um desafio pelo seu índice. */
+        function loadPuzzle(index) {
+            if (index >= puzzles.length || index < 0) {
+                messageArea.textContent = "Fim dos desafios! Parabéns!";
+                puzzleDescriptionElement.textContent = "Você completou todos os desafios!";
+                turnIndicatorElement.textContent = "-";
+                nextPuzzleButton.classList.add('hidden');
+                resetPuzzleButton.classList.add('hidden');
+                boardElement.innerHTML = ''; // Limpa o tabuleiro
+                return;
+            }
+            currentPuzzleIndex = index;
+            const puzzle = puzzles[currentPuzzleIndex];
+            // Cria uma cópia profunda do boardSetup para boardState para evitar mutações no original
+            boardState = puzzle.boardSetup.map(row => [...row]);
+            currentTurn = puzzle.turn;
+            selectedSquare = null;
+            puzzleSolved = false;
+
+            puzzleDescriptionElement.textContent = puzzle.description;
+            turnIndicatorElement.textContent = `Vez das: ${currentTurn === 'w' ? 'Brancas' : 'Pretas'}`;
+            messageArea.textContent = "Selecione uma peça para mover.";
+            messageArea.className = 'mt-6 mb-4 p-3 min-h-[50px] rounded-lg text-slate-700 bg-white shadow-md font-semibold';
+
+
+            renderBoard();
+            nextPuzzleButton.classList.add('hidden');
+            resetPuzzleButton.classList.remove('hidden');
+        }
+
+        /** Renderiza o tabuleiro e as peças no DOM. */
+        function renderBoard() {
+            boardElement.innerHTML = ''; // Limpa o tabuleiro anterior
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark'); // Alterna cores das casas
+                    square.dataset.row = r;
+                    square.dataset.col = c;
+
+                    const pieceCode = boardState[r][c];
+                    if (pieceCode) {
+                        square.textContent = PIECES[pieceCode];
+                        square.classList.add(pieceCode.startsWith('w') ? 'piece-white' : 'piece-black');
+                    }
+
+                    square.addEventListener('click', () => handleSquareClick(r, c));
+                    boardElement.appendChild(square);
+                }
+            }
+        }
+
+        /** Obtém a cor da peça ('w' ou 'b') ou null se não for uma peça válida. */
+        function getPieceColor(pieceCode) {
+            if (!pieceCode) return null;
+            return pieceCode.startsWith('w') ? 'w' : (pieceCode.startsWith('b') ? 'b' : null);
+        }
+
+        /** Lida com o clique em uma casa do tabuleiro. */
+        function handleSquareClick(row, col) {
+            if (puzzleSolved) return; // Não faz nada se o desafio já foi resolvido
+
+            const clickedPieceCode = boardState[row][col];
+            const clickedPieceColor = getPieceColor(clickedPieceCode);
+
+            if (!selectedSquare) { // Nenhuma peça selecionada ainda
+                if (clickedPieceCode && clickedPieceColor === currentTurn) {
+                    selectedSquare = { row, col, piece: clickedPieceCode };
+                    highlightSelectedSquare(row, col, true);
+                    messageArea.textContent = `Peça ${PIECES[clickedPieceCode]} em ${getAlgebraic(row,col)} selecionada. Escolha o destino.`;
+                } else if (clickedPieceCode) {
+                    messageArea.textContent = "Não é a vez desta cor.";
+                     messageArea.className = 'mt-6 mb-4 p-3 min-h-[50px] rounded-lg text-red-700 bg-red-100 shadow-md font-semibold';
+                }
+            } else { // Uma peça já está selecionada, tentando mover
+                // Desseleciona se clicar na mesma casa
+                if (selectedSquare.row === row && selectedSquare.col === col) {
+                    highlightSelectedSquare(selectedSquare.row, selectedSquare.col, false);
+                    selectedSquare = null;
+                    messageArea.textContent = "Seleção cancelada. Escolha uma peça.";
+                    return;
+                }
+
+                // Verifica se o movimento é a solução do desafio
+                const puzzle = puzzles[currentPuzzleIndex];
+                if (selectedSquare.row === puzzle.solution.from[0] &&
+                    selectedSquare.col === puzzle.solution.from[1] &&
+                    row === puzzle.solution.to[0] &&
+                    col === puzzle.solution.to[1]) {
+                    
+                    // Movimento da solução!
+                    const pieceToMove = boardState[selectedSquare.row][selectedSquare.col];
+                    boardState[row][col] = pieceToMove; // Move a peça para o destino
+                    boardState[selectedSquare.row][selectedSquare.col] = null; // Limpa a casa de origem
+
+                    renderBoard(); // Re-renderiza o tabuleiro com o movimento
+                    
+                    // Destaca a casa de destino do mate
+                    const targetSquareElement = boardElement.querySelector(`.square[data-row='${row}'][data-col='${col}']`);
+                    if(targetSquareElement) targetSquareElement.classList.add('highlight-solution');
+
+                    messageArea.textContent = `XEQUE-MATE! Parabéns, você resolveu o desafio! ${PIECES[pieceToMove]} de ${getAlgebraic(selectedSquare.row, selectedSquare.col)} para ${getAlgebraic(row, col)}.`;
+                    messageArea.className = 'mt-6 mb-4 p-3 min-h-[50px] rounded-lg text-green-700 bg-green-100 shadow-md font-semibold';
+                    puzzleSolved = true;
+                    nextPuzzleButton.classList.remove('hidden');
+                    highlightSelectedSquare(selectedSquare.row, selectedSquare.col, false); // Remove o destaque da origem
+                    selectedSquare = null;
+
+                } else {
+                    messageArea.textContent = "Não é o lance de mate. Tente novamente!";
+                    messageArea.className = 'mt-6 mb-4 p-3 min-h-[50px] rounded-lg text-orange-700 bg-orange-100 shadow-md font-semibold';
+                    highlightSelectedSquare(selectedSquare.row, selectedSquare.col, false);
+                    selectedSquare = null;
+                    // Não altera o boardState em caso de erro, permite nova tentativa.
+                }
+            }
+        }
+        
+        /** Converte coordenadas (linha, coluna) para notação algébrica (ex: e4). */
+        function getAlgebraic(row, col) {
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            const ranks = ['8', '7', '6', '5', '4', '3', '2', '1']; // Tabuleiro de xadrez padrão
+            return files[col] + ranks[row];
+        }
+
+
+        /** Adiciona ou remove o destaque de uma casa selecionada. */
+        function highlightSelectedSquare(row, col, select) {
+            const squareElement = boardElement.querySelector(`.square[data-row='${row}'][data-col='${col}']`);
+            if (squareElement) {
+                if (select) {
+                    squareElement.classList.add('selected-square');
+                } else {
+                    squareElement.classList.remove('selected-square');
+                }
+            }
+        }
+
+        // --- Event Listeners para Botões ---
+        nextPuzzleButton.addEventListener('click', () => {
+            loadPuzzle(currentPuzzleIndex + 1);
+        });
+
+        resetPuzzleButton.addEventListener('click', () => {
+            loadPuzzle(currentPuzzleIndex); // Recarrega o desafio atual
+        });
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>
