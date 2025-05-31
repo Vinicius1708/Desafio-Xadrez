@@ -33,22 +33,18 @@ Este projeto foi desenvolvido como uma ferramenta divertida e desafiadora para a
 
 ## 🚀 Como Executar o Projeto
 
-**Opção 1: Online (via GitHub Pages)**
-
-* Acesse: `https://github.com/Vinicius1708/Desafio-Xadrez`
-
-**Opção 2: Localmente**
+**Opção 1: Localmente**
 
 1.  Clone ou faça o download deste repositório:
     ```bash
-    git clone [https://github.com/](https://github.com/)Vinicius1708/Desafio-Xadrez.git
+    git clone [https://github.com/](https://github.com/)Vinicius1708/desafio-xadrez.git
     ```
 2.  Navegue até a pasta do projeto.
 3.  Abra o arquivo `index.html` (ou o nome do arquivo HTML principal) no seu navegador.
 
 ## 👤 Desenvolvido Por
 
-* **Autor:** `Vinicius Brigadeiro`
+* **Autor:** `Vini Brigadeiro`
 * **Projeto Acadêmico:** Disciplina de `Introdução à Programação de Computadores`
 * **Instituição:** `Ciência da Computação` - `Estacio`
 
